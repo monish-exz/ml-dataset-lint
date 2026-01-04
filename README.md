@@ -1,10 +1,10 @@
 # ML-Dataset-Lint
 
 ML-Dataset-Lint is a lightweight dataset linting tool that helps detect
-data quality and label-related issues **before** training machine learning models.
+data quality, target, and label-related issues **before** training machine learning models.
 
 It works like a linter for datasets — identifying missing values, duplicates,
-constant columns, class imbalance, and label risks early in the ML pipeline.
+constant columns, class imbalance, leakage signals, and label risks early in the ML pipeline.
 
 ---
 
@@ -17,7 +17,7 @@ so you can fix issues early instead of debugging models later.
 
 ---
 
-## Features (v0.2)
+## Features (v0.3)
 
 ### Core Dataset Health
 - Load CSV datasets
@@ -34,6 +34,12 @@ so you can fix issues early instead of debugging models later.
 - Rare class detection
 - Label dominance detection
 - Difficulty signals for classification tasks
+
+### Correlation & Leakage Signals
+- Feature–target correlation analysis
+- High-correlation feature warnings
+- ID-like column detection
+- Potential data leakage signals
 
 ---
 
@@ -62,8 +68,9 @@ ml-dataset-lint/
 2. Dataset is loaded into memory
 3. Structural checks are applied
 4. Target & label distribution is analyzed
-5. Rule-based warnings are generated
-6. Results are displayed in the terminal
+5. Correlation & leakage signals are evaluated
+6. Rule-based warnings are generated
+7. Results are displayed in the terminal
 
 ---
 
@@ -73,7 +80,11 @@ ml-dataset-lint/
 python main.py
 ```
 
-You will be prompted to enter the dataset file path and target column.
+You will be prompted to enter:
+
+Dataset file path
+
+Target column name
 
 ---
 
@@ -85,6 +96,7 @@ You will be prompted to enter the dataset file path and target column.
 [INFO] Column 'country_code' is constant
 [WARN] Target column is highly imbalanced (92% vs 8%)
 [INFO] Rare class detected with fewer than 2% samples
+[WARN] Feature 'user_id' is highly correlated with target (possible leakage)
 ```
 
 ---
