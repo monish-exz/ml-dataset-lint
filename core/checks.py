@@ -1,3 +1,5 @@
+import numpy as np 
+import pandas as pd
 # =============================#
 #    Missing Value Analysis    #
 # =============================#
@@ -115,7 +117,7 @@ def class_percents(df, column_name):
 
 
 # =============================#
-#    Detect Imbalance & Rarity #
+#   Detect Imbalance & Rarity  #
 # =============================#
 
 def class_imbalance(
@@ -146,5 +148,82 @@ def class_imbalance(
             warnings.append(
                 f"[WARN] Label '{label}' has only {count} samples"
             )
+
+    return warnings
+
+
+
+# =============================#
+#  Correlation & Leakage Check #
+# =============================#
+
+def leakage_checks(df, target_column, corr_threshold=0.9, id_ratio=0.95):
+    warnings = []
+
+
+    #   Select numeric features    #
+    numeric_df = df.select_dtypes(include=['number'])
+
+    if target_column not in numeric_df.columns:
+        print("\n[INFO] Target is non-numeric — skipping correlation checks")
+        return warnings
+
+    # Remove target from features
+    features_df = numeric_df.drop(columns=[target_column])
+    target = numeric_df[target_column]
+
+    print("\nNUMERIC FEATURES USED FOR CORRELATION")
+    print("-----------------------------------")
+    print(list(features_df.columns))
+
+   
+    #  Compute correlations  #
+    correlations = {}
+
+    for feature in features_df.columns:
+        corr = features_df[feature].corr(target)
+
+        if pd.isna(corr):
+            continue
+
+        correlations[feature] = corr
+        print(f"{feature} -> correlation = {corr:.3f}")
+
+   
+    #   High correlation flags   #
+    high_corr_features = set()
+
+    for feature, corr in correlations.items():
+        if abs(corr) > corr_threshold:
+            warnings.append(
+                f"[WARN] Feature '{feature}' has extremely high correlation ({corr:.2f}) with target"
+            )
+            high_corr_features.add(feature)
+
+   
+    #   ID-like column detection  #
+    id_like_features = set()
+    total_rows = len(df)
+
+    for feature in features_df.columns:
+        unique_ratio = features_df[feature].nunique() / total_rows
+
+        name_flag = any(
+            key in feature.lower()
+            for key in ["id", "uuid", "index"]
+        )
+
+        if unique_ratio > id_ratio or name_flag:
+            warnings.append(
+                f"[WARN] Feature '{feature}' appears to be an identifier"
+            )
+            id_like_features.add(feature)
+
+   
+    #   Combine leakage signals  #
+    for feature in high_corr_features & id_like_features:
+        warnings.append(
+            f"[CRITICAL] Feature '{feature}' shows strong leakage risk (ID-like + high correlation)"
+        )
 
     return warnings

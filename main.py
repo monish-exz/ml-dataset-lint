@@ -12,7 +12,8 @@ from core.checks import (
     extract_column,
     class_frequencies,
     class_percents,
-    class_imbalance
+    class_imbalance,
+    leakage_checks
 )
 from core.report import print_warnings
 
@@ -55,6 +56,13 @@ def main():
     )
 
     warnings.extend(label_warnings)
+
+    print("===========================================================")
+
+    # v0.3 
+    leakage_warnings = leakage_checks(df, target_column)
+    warnings.extend(leakage_warnings)
+
 
     print("\n================= LINT WARNINGS =================")
     print_warnings(warnings)
