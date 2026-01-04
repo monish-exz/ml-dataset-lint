@@ -13,58 +13,91 @@ from core.checks import (
     class_frequencies,
     class_percents,
     class_imbalance,
-    leakage_checks
+    leakage_checks,
+    bias_signals,
+    dataset_health,
+    trainability_checks
 )
 from core.report import print_warnings
 
 
 def main():
-    user_input = input("ENTER THE PATH (OR) DROP THE FILE: ")
-    df = load_dataset(user_input)
+    # -----------------------------
+    # Load dataset (CSV only)
+    # -----------------------------
+    path = input("ENTER CSV FILE PATH: ").strip()
+    df = load_dataset(path)
 
     print_dataset_summary(df)
 
     warnings = []
 
-    # v0.1 checks
+    # -----------------------------
+    # v0.1 — Basic dataset checks
+    # -----------------------------
     warnings.extend(check_missing_values(df))
     warnings.extend(check_duplicates(df))
     warnings.extend(check_constant_columns(df))
 
-    print("===========================================================")
+    print("=" * 55)
 
+    # -----------------------------
     # v0.2 — Target analysis
-    target_column = input("\nENTER THE TARGET COLUMN (OR LEAVE BLANK): ")
+    # -----------------------------
+    target = input("ENTER TARGET COLUMN (OR LEAVE BLANK): ").strip()
 
-    if not validate_target_column(df, target_column):
+    if not validate_target_column(df, target):
         print_warnings(warnings)
         return
 
-    X, y = extract_column(df, target_column)
+    X, y = extract_column(df, target)
 
-    print("\nTarget Preview:")
+    print("\nTarget preview:")
     print(y.head())
 
-    class_frequencies(df, target_column)
-    class_percents(df, target_column)
+    class_frequencies(df, target)
+    class_percents(df, target)
 
-    label_warnings = class_imbalance(
-        df,
-        target_column,
-        dominance_threshold=90,
-        rare_count_threshold=20
+    warnings.extend(
+        class_imbalance(
+            df,
+            target,
+            dominance_threshold=90,
+            rare_count_threshold=20
+        )
     )
 
-    warnings.extend(label_warnings)
+    print("=" * 55)
 
-    print("===========================================================")
+    # -----------------------------
+    # v0.3 — Leakage checks
+    # -----------------------------
+    warnings.extend(
+        leakage_checks(df, target)
+    )
 
-    # v0.3 
-    leakage_warnings = leakage_checks(df, target_column)
-    warnings.extend(leakage_warnings)
+    # -----------------------------
+    # v0.4 — Bias signals
+    # -----------------------------
+    warnings.extend(
+        bias_signals(df, target)
+    )
 
+    # -----------------------------
+    # v0.5 — Dataset health
+    # -----------------------------
+    warnings.extend(
+        dataset_health(df)
+    )
 
-    print("\n================= LINT WARNINGS =================")
+    # -----------------------------
+    # v0.6 — Trainability
+    # -----------------------------
+    warnings.extend(
+        trainability_checks(df)
+    )
+
+    print("\n================ LINT WARNINGS ================")
     print_warnings(warnings)
 
 
